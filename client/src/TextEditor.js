@@ -1,7 +1,5 @@
 import { useCallback, useEffect, useState } from "react"
 import Quill from "quill"
-import ReactQuill from 'react-quill';
-
 import "quill/dist/quill.snow.css"
 import { io } from "socket.io-client"
 import { useParams } from "react-router-dom"
@@ -23,18 +21,10 @@ export default function TextEditor() {
   const { id: documentId } = useParams()
   const [socket, setSocket] = useState()
   const [quill, setQuill] = useState()
-  const [status, setStatus] = useState("Connecting...")  // New state for status
-  const [editorValue, setEditorValue] = useState('');
-  const handleChange = (value) => {
-    setEditorValue(value);
-  };
+
   useEffect(() => {
     const s = io("http://localhost:3001")
     setSocket(s)
-
-    s.on("connect_error", () => setStatus("Connection failed."))
-    s.on("reconnect", () => setStatus("Reconnected."))
-    s.on("disconnect", () => setStatus("Disconnected."))
 
     return () => {
       s.disconnect()
@@ -47,11 +37,6 @@ export default function TextEditor() {
     socket.once("load-document", document => {
       quill.setContents(document)
       quill.enable()
-      setStatus("Document loaded.")  // Update status
-    })
-
-    socket.once("load-document-error", () => {  // Listen to load error
-      setStatus("Failed to load document.")
     })
 
     socket.emit("get-document", documentId)
@@ -62,7 +47,6 @@ export default function TextEditor() {
 
     const interval = setInterval(() => {
       socket.emit("save-document", quill.getContents())
-      setStatus("Document saved.")  // Update status on save
     }, SAVE_INTERVAL_MS)
 
     return () => {
@@ -111,12 +95,5 @@ export default function TextEditor() {
     q.setText("Loading...")
     setQuill(q)
   }, [])
-
-  return (
-    <div className="container">
-      <ReactQuill value={editorValue} onChange={handleChange} />
-      <div className="status-bar">{status}</div>  {/* Status bar element */}
-      <div ref={wrapperRef}></div>
-    </div>
-  )
+  return <div className="container" ref={wrapperRef}></div>
 }
